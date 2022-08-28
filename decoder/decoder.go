@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"strconv"
-	"unicode/utf8"
 
 	"github.com/wreulicke/go-redis/data"
 )
@@ -27,6 +26,13 @@ func New(r io.Reader) *Decoder {
 }
 
 func (d *Decoder) Decode() (data.Data, error) {
+	data, err := d.decode()
+	d.next()
+	d.next()
+	return data, err
+}
+
+func (d *Decoder) decode() (data.Data, error) {
 	r, err := d.next()
 	if err != nil {
 		// TODO add information to error
@@ -72,13 +78,19 @@ func (d *Decoder) decodeString() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if r == '\r' && d.peek() == '\n' {
-			_, err := d.next()
-			return d.buffer.String(), err
-		}
 		_, err = d.buffer.WriteRune(r)
 		if err != nil {
 			return "", err
+		}
+		bs, err := d.reader.Peek(2)
+		// TODO consider io.EOF
+		if err != nil {
+			return "", err
+		}
+		if string(bs) == "\r\n" {
+			d.next()
+			_, err := d.next()
+			return d.buffer.String(), err
 		}
 	}
 }
@@ -112,12 +124,6 @@ func (d *Decoder) decodeBulkString() (data.Data, error) {
 			bs = bs[:n-i]
 		}
 	}
-	if err := d.expect('\r'); err != nil {
-		return nil, err
-	}
-	if err := d.expect('\n'); err != nil {
-		return nil, err
-	}
 	return &data.String{
 		Value: b.String(),
 	}, nil
@@ -150,46 +156,4 @@ func (d *Decoder) next() (rune, error) {
 		return eof, err
 	}
 	return r, nil
-}
-
-func (d *Decoder) peek() rune {
-	lead, err := d.reader.Peek(1)
-	if err == io.EOF {
-		return eof
-	} else if err != nil {
-		return 0
-	}
-
-	p, err := d.reader.Peek(runeLen(lead[0]))
-
-	if err == io.EOF {
-		return eof
-	} else if err != nil {
-		return 0
-	}
-
-	ruNe, _ := utf8.DecodeRune(p)
-	return ruNe
-}
-
-func (d *Decoder) expect(ruNe rune) error {
-	r, err := d.next()
-	if err != nil {
-		return err
-	}
-	if r != ruNe {
-		return errors.New("unexpected rune")
-	}
-	return nil
-}
-
-func runeLen(lead byte) int {
-	if lead < 0xC0 {
-		return 1
-	} else if lead < 0xE0 {
-		return 2
-	} else if lead < 0xF0 {
-		return 3
-	}
-	return 4
 }

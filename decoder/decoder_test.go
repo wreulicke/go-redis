@@ -98,15 +98,22 @@ func TestDecodeArray(t *testing.T) {
 			&data.String{Value: "hello"},
 			&data.String{Value: "world"},
 		}}},
+		{"*1\r\n*0\r\n", &data.Array{Values: []data.Data{
+			&data.Array{
+				Values: []data.Data{},
+			},
+		}}},
 	}
 
 	for _, test := range tests {
-		b := bytes.NewBufferString(test.input)
-		d := New(b)
+		t.Run(test.input, func(t *testing.T) {
+			b := bytes.NewBufferString(test.input)
+			d := New(b)
 
-		actual, err := d.Decode()
-		assert.NoError(t, err)
-		assertData(t, test.expected, actual)
+			actual, err := d.Decode()
+			assert.NoError(t, err)
+			assertData(t, test.expected, actual)
+		})
 	}
 }
 
