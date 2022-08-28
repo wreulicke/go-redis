@@ -203,3 +203,14 @@ func (d *Decoder) expect(ruNe rune) error {
 	}
 	return nil
 }
+
+func runeLen(lead byte) int {
+	if lead < 0xC0 {
+		return 1
+	} else if lead < 0xE0 {
+		return 2
+	} else if lead < 0xF0 {
+		return 3
+	}
+	return 4
+}
