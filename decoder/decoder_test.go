@@ -79,12 +79,14 @@ func TestDecodeBulkString(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		b := bytes.NewBufferString(test.input)
-		d := New(b)
+		t.Run(test.input, func(t *testing.T) {
+			b := bytes.NewBufferString(test.input)
+			d := New(b)
 
-		actual, err := d.Decode()
-		assert.NoError(t, err)
-		assertData(t, test.expected, actual)
+			actual, err := d.Decode()
+			assert.NoError(t, err)
+			assertData(t, test.expected, actual)
+		})
 	}
 }
 
