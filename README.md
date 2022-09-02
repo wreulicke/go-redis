@@ -6,7 +6,10 @@ Toy implementation of redis written in Go.
 
 * [x] encoder/decoder
 * [ ] client
+  - [ ] commands
 * [ ] server
+  - [ ] commands
+  - [ ] auth
 * [ ] experimental: websocket
 
 ## Note
